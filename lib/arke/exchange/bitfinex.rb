@@ -38,6 +38,7 @@ module Arke::Exchange
           update_order(book, order)
         }
       end
+      @book = book
     end
 
     def update_order(book, data)
@@ -45,7 +46,7 @@ module Arke::Exchange
       if price == 0
         book.remove(id)
       else
-        book.add(Arke::Order.new(id, 'BTCUSD', price, amount))
+        book.add(Arke::Order.new(id, 'ETHUSD', price, amount))
       end
     end
 
@@ -74,9 +75,10 @@ module Arke::Exchange
       sub = {
         event: "subscribe",
         channel: "book",
-        pair: "BTCUSD",
+        pair: "ETHUSD",
         prec: "R0"
       }
+
       EM.next_tick {
         @ws.send(JSON.generate(sub))
       }
@@ -89,33 +91,31 @@ module Arke::Exchange
     end
 
     def on_close(e)
-      @log.info "Closing code: #{event.code} Reason: #{event.reason}"
+      @log.info "Closing code: #{e.code} Reason: #{e.reason}"
     end
 
     def start
-      EM.run {
-        @ws = Faye::WebSocket::Client.new(@url)
+      @ws = Faye::WebSocket::Client.new(@url)
 
-        @ws.on(:open) do |e|
-          on_open(e)
-        end
+      @ws.on(:open) do |e|
+        on_open(e)
+      end
 
-        @ws.on(:message) do |e|
-          on_message(e)
-        end
+      @ws.on(:message) do |e|
+        on_message(e)
+      end
 
-        @ws.on(:close) do |e|
-          on_close(e)
-        end
-
-        Signal.trap("INT")  { print; EventMachine.stop }
-        Signal.trap("TERM") { print; EventMachine.stop }
-      }
+      @ws.on(:close) do |e|
+        on_close(e)
+      end
     end
 
     def print
       @map.each { |item| pp item }
     end
 
+    def orderbook
+      @book
+    end
   end
 end

@@ -39,30 +39,27 @@ module SwaggerClient
       response = request.run
 
       if @config.debugging
-        @config.logger.debug "HTTP response body ~BEGIN~\n#{response.body}\n~END~\n"
+        @config.logger.debug "\n  HTTP response body \n~BEGIN~\n#{response.body}\n~END~\n"
       end
 
       unless response.success?
         if response.timed_out?
-          fail ApiError.new('Connection timed out')
+          raise ApiError, 'Connection timed out'
         elsif response.code == 0
           # Errors from libcurl will be made visible here
-          fail ApiError.new(:code => 0,
-                            :message => response.return_message)
+          raise ApiError.new(code: 0,
+                             message: response.return_message)
         else
-          fail ApiError.new(:code => response.code,
-                            :response_headers => response.headers,
-                            :response_body => response.body),
-               response.status_message
+          raise ApiError.new(code: response.code,
+                             response_headers: response.headers,
+                             response_body: response.body),
+                response.status_message
         end
       end
 
-      if opts[:return_type]
-        data = deserialize(response, opts[:return_type])
-      else
-        data = nil
-      end
-      return data, response.code, response.headers
+      data = (deserialize(response, opts[:return_type]) if opts[:return_type])
+
+      [data, response.code, response.headers]
     end
 
     # Builds the HTTP request
@@ -89,9 +86,9 @@ module SwaggerClient
         verbose: @config.debugging
       }
 
-      if [:post, :patch, :put, :delete].include?(http_method)
+      if %i[post patch put delete].include?(http_method)
         req_body = build_request_body(header_params, form_params, opts[:body])
-        req_opts.update :body => req_body
+        req_opts.update body: req_body
         if @config.debugging
           @config.logger.debug "HTTP request body param ~BEGIN~\n#{req_body}\n~END~\n"
         end
@@ -123,7 +120,7 @@ module SwaggerClient
     # @param [String] mime MIME
     # @return [Boolean] True if the MIME is application/json
     def json_mime?(mime)
-      (mime == '*/*') || !(mime =~ /Application\/.*json(?!p)(;.*)?/i).nil?
+      (mime == '*/*') || !(mime =~ %r{Application/.*json(?!p)(;.*)?}i).nil?
     end
 
     # Deserialize the response to the given return type.
@@ -145,12 +142,12 @@ module SwaggerClient
       # ensuring a default content type
       content_type = response.headers['Content-Type'] || 'application/json'
 
-      fail "Content-Type is not supported: #{content_type}" unless json_mime?(content_type)
+      raise "Content-Type is not supported: #{content_type}" unless json_mime?(content_type)
 
       begin
-        data = JSON.parse("[#{body}]", :symbolize_names => true)[0]
+        data = JSON.parse("[#{body}]", symbolize_names: true)[0]
       rescue JSON::ParserError => e
-        if %w(String Date DateTime).include?(return_type)
+        if %w[String Date DateTime].include?(return_type)
           data = body
         else
           raise e
@@ -166,6 +163,7 @@ module SwaggerClient
     # @return [Mixed] Data in a particular type
     def convert_to_type(data, return_type)
       return nil if data.nil?
+
       case return_type
       when 'String'
         data.to_s
@@ -186,11 +184,11 @@ module SwaggerClient
         data
       when /\AArray<(.+)>\z/
         # e.g. Array<Pet>
-        sub_type = $1
+        sub_type = Regexp.last_match(1)
         data.map { |item| convert_to_type(item, sub_type) }
       when /\AHash\<String, (.+)\>\z/
         # e.g. Hash<String, Integer>
-        sub_type = $1
+        sub_type = Regexp.last_match(1)
         {}.tap do |hash|
           data.each { |k, v| hash[k] = convert_to_type(v, sub_type) }
         end
@@ -220,7 +218,7 @@ module SwaggerClient
         else
           prefix = 'download-'
         end
-        prefix = prefix + '-' unless prefix.end_with?('-')
+        prefix += '-' unless prefix.end_with?('-')
         encoding = response.body.encoding
         tempfile = Tempfile.open(prefix, @config.temp_folder_path, encoding: encoding)
         @tempfile = tempfile
@@ -229,12 +227,12 @@ module SwaggerClient
         chunk.force_encoding(encoding)
         tempfile.write(chunk)
       end
-      request.on_complete do |response|
+      request.on_complete do |_response|
         tempfile.close
-        @config.logger.info "Temp file written to #{tempfile.path}, please copy the file to a proper folder "\
-                            "with e.g. `FileUtils.cp(tempfile.path, '/new/file/path')` otherwise the temp file "\
-                            "will be deleted automatically with GC. It's also recommended to delete the temp file "\
-                            "explicitly with `tempfile.delete`"
+        @config.logger.info "Temp file written to #{tempfile.path}, please copy the file to a proper folder " \
+                            "with e.g. `FileUtils.cp(tempfile.path, '/new/file/path')` otherwise the temp file " \
+                            "will be deleted automatically with GC. It's also recommended to delete the temp file " \
+                            'explicitly with `tempfile.delete`'
       end
     end
 
@@ -244,12 +242,12 @@ module SwaggerClient
     # @param [String] filename the filename to be sanitized
     # @return [String] the sanitized filename
     def sanitize_filename(filename)
-      filename.gsub(/.*[\/\\]/, '')
+      filename.gsub(%r{.*[/\\]}, '')
     end
 
     def build_request_url(path)
       # Add leading and trailing slashes to path
-      path = "/#{path}".gsub(/\/+/, '/')
+      path = "/#{path}".gsub(%r{/+}, '/')
       URI.encode(@config.base_url + path)
     end
 
@@ -262,7 +260,7 @@ module SwaggerClient
     def build_request_body(header_params, form_params, body)
       # http form
       if header_params['Content-Type'] == 'application/x-www-form-urlencoded' ||
-          header_params['Content-Type'] == 'multipart/form-data'
+         header_params['Content-Type'] == 'multipart/form-data'
         data = {}
         form_params.each do |key, value|
           case value
@@ -294,6 +292,7 @@ module SwaggerClient
     # @return [String] the Accept header (e.g. application/json)
     def select_header_accept(accepts)
       return nil if accepts.nil? || accepts.empty?
+
       # use JSON when present, otherwise use all of the provided
       json_accept = accepts.find { |s| json_mime?(s) }
       json_accept || accepts.join(',')
@@ -305,6 +304,7 @@ module SwaggerClient
     def select_header_content_type(content_types)
       # use application/json by default
       return 'application/json' if content_types.nil? || content_types.empty?
+
       # use JSON when present, otherwise use the first one
       json_content_type = content_types.find { |s| json_mime?(s) }
       json_content_type || content_types.first
@@ -315,12 +315,13 @@ module SwaggerClient
     # @return [String] JSON string representation of the object
     def object_to_http_body(model)
       return model if model.nil? || model.is_a?(String)
+
       local_body = nil
-      if model.is_a?(Array)
-        local_body = model.map { |m| object_to_hash(m) }
-      else
-        local_body = object_to_hash(model)
-      end
+      local_body = if model.is_a?(Array)
+                     model.map { |m| object_to_hash(m) }
+                   else
+                     object_to_hash(model)
+                   end
       local_body.to_json
     end
 
@@ -339,19 +340,11 @@ module SwaggerClient
     # @param [String] collection_format one of :csv, :ssv, :tsv, :pipes and :multi
     def build_collection_param(param, collection_format)
       case collection_format
-      when :csv
-        param.join(',')
-      when :ssv
-        param.join(' ')
-      when :tsv
-        param.join("\t")
-      when :pipes
-        param.join('|')
       when :multi
         # return the array directly as typhoeus will handle it as expected
         param
       else
-        fail "unknown collection format: #{collection_format.inspect}"
+        raise "unknown collection format: #{collection_format.inspect}"
       end
     end
   end

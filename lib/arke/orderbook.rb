@@ -10,6 +10,7 @@ module Arke
     def initialize(market)
       @market = market
       @orders = {}
+      @orders_queue = EventMachine::Queue.new
       @book = {
         ask: ::RBTree.new,
         bid: ::RBTree.new
@@ -18,6 +19,7 @@ module Arke
 
     def add(order)
       @orders[order.id] = order
+      @orders_queue.push(order)
 
       side = @book[order.side]
       side[order.price] ||= PriceLevel.new(order.price)
@@ -31,12 +33,15 @@ module Arke
     end
 
     def find(id)
-      return @orders[id]
+      @orders[id]
     end
 
     def dump
       @book
     end
 
+    def orders_queue
+      @orders_queue
+    end
   end
 end

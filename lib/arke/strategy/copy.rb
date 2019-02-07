@@ -1,6 +1,9 @@
+require 'arke/exchange/rubykube'
+
 module Arke::Strategy
   module Copy
-    def perform!
+    def process!(orders)
+      binding.pry
     end
   end
 end
