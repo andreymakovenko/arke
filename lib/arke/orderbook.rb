@@ -17,7 +17,13 @@ module Arke
       }
     end
 
+    def empty?
+      @orders.empty?
+    end
+
     def add(order)
+      return if order.nil?
+
       @orders[order.id] = order
       @orders_queue.push(order)
 
@@ -28,6 +34,8 @@ module Arke
 
     def remove(id)
       order = @orders[id]
+      return if order.nil?
+
       @book[order.side][order.price].remove(order)
       @orders.delete(id)
     end

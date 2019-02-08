@@ -85,7 +85,7 @@ module Arke::Exchange
     end
 
     def on_message(e)
-      @log.info "Message: #{e.data}"
+      # @log.info "Message: #{e.data}"
       msg = JSON.parse(e.data)
       process_message(msg)
     end
@@ -112,6 +112,10 @@ module Arke::Exchange
 
     def print
       @map.each { |item| pp item }
+    end
+
+    def logger
+      @log
     end
 
     def orderbook

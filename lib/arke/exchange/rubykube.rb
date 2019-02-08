@@ -15,6 +15,10 @@ module Arke::Exchange
       def account
         @account_api ||= SwaggerClient::API::Account.new
       end
+
+      def public
+        @account_api ||= SwaggerClient::API::Public.new
+      end
     end
   end
 end

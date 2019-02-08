@@ -51,8 +51,18 @@ module SwaggerClient
       # @param [Hash] opts the optional parameters
       # @option opts [String] :ord_type  (default to limit)
       # @return [Order]
-      def create_order(market, side, volume, price, opts = {})
-        data, _status_code, _headers = post_market_orders_with_http_info(market, side, volume, price, opts)
+      def create_order(ord)
+        pp ord
+        return if ord.nil?
+
+        data, _status_code, _headers =
+          post_market_orders_with_http_info(
+            ord.market.downcase,
+            ord.side,
+            ord.amount,
+            ord.price,
+            {}
+          )
         data
       end
 
@@ -249,21 +259,22 @@ module SwaggerClient
         # HTTP header 'Content-Type'
         header_params['Content-Type'] = @api_client.select_header_content_type(['application/json'])
 
+        pp side
         # form parameters
-        form_params = {}
-        form_params['market'] = market
-        form_params['side'] = side
-        form_params['volume'] = volume
-        form_params['price'] = price
-        form_params['ord_type'] = opts[:ord_type] unless opts[:ord_type].nil?
+        post_body = {
+          market: market,
+          side: side == :ask ? 'buy' : 'sell',
+          volume: volume,
+          price: price
+        }
+        post_body[:ord_type] = opts[:ord_type] unless opts[:ord_type].nil?
 
         # http body (model)
-        post_body = nil
         auth_names = []
         data, status_code, headers = @api_client.call_api(:POST, local_var_path,
                                                           header_params: header_params,
                                                           query_params: query_params,
-                                                          form_params: form_params,
+                                                          form_params: {},
                                                           body: post_body,
                                                           auth_names: auth_names,
                                                           return_type: 'Order')
