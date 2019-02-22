@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'exchange'
 require 'action'
 
@@ -19,5 +21,8 @@ module Arke::Strategy
     def set_target_worker(worker)
       @target = worker
     end
+
+    # place for logic to be added when we finish Worker class
+    def push(action); end
   end
 end
