@@ -3,7 +3,7 @@ require 'action'
 
 RSpec.describe Arke::Action do
   let(:type) { :create_order }
-  let(:params) { Arke::Order.new(1, 'ethusd', 1, 1) }
+  let(:params) { Arke::Order.new(1, 'ethusd', 1, 1, :sell) }
 
   it 'creates istruction' do
     action = Arke::Action.new(type, params)

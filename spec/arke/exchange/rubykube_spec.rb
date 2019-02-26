@@ -20,11 +20,11 @@ RSpec.describe Arke::Exchange::Rubykube do
     }
   }
   let(:strategy) { Arke::Strategy::Base.new(strategy_config) }
-  let(:order)    { Arke::Order.new(1, 'ethusd', 1, 1) }
+  let(:order)    { Arke::Order.new(1, 'ethusd', 1, 1, :buy) }
   let(:rubykube) { Arke::Exchange::Rubykube.new(exchange_config, strategy) }
 
-  let(:action_create_order) { Arke::Action.new(:create_order, Arke::Order.new(1, 'ethusd', 1, 1)) }
-  let(:action_cancel_order) { Arke::Action.new(:cancel_order, Arke::Order.new(1, 'ethusd', 0, 1)) }
+  let(:action_create_order) { Arke::Action.new(:create_order, Arke::Order.new(1, 'ethusd', 1, 1, :buy)) }
+  let(:action_cancel_order) { Arke::Action.new(:cancel_order, Arke::Order.new(1, 'ethusd', 0, 1, :buy)) }
   let(:action_other)        { Arke::Action.new(:shutdown)}
 
   context 'rubykube#call' do

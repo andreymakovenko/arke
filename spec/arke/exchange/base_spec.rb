@@ -1,13 +1,21 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
-require 'arke/exchange/base'
+require 'securerandom'
 
 describe Arke::Exchange::Base do
   context 'action push' do
-    let(:strategy) { Arke::Strategy::Base.new }
-    let(:exchange) { Arke::Exchange::Base.new(strategy) }
-    let(:action) { 'SHUTDOWN' }
+    let(:config) do
+      {
+        'driver' => 'rubykube',
+        'host' => 'http://www.devkube.com',
+        'key' => @authorized_api_key,
+        'secret' => SecureRandom.hex
+      }
+    end
+    let(:strategy) { Arke::Strategy::Base.new(config) }
+    let(:exchange) { Arke::Exchange::Base.new(config, strategy) }
+    let(:action) { :shutdown }
     let(:params) { [] }
 
     it 'pushes action with params' do

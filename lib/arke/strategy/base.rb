@@ -23,6 +23,8 @@ module Arke::Strategy
     end
 
     # place for logic to be added when we finish Worker class
-    def push(action); end
+    def push(action);
+      action
+    end
   end
 end

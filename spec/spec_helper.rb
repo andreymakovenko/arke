@@ -16,6 +16,7 @@
 
 $LOAD_PATH << File.expand_path('../lib', __dir__)
 $LOAD_PATH << File.expand_path('../lib/arke', __dir__)
+require 'arke'
 
 Dir['./spec/support/**/*.rb'].each { |f| require f }
 
